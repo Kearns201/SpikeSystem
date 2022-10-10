@@ -1,6 +1,7 @@
 # pyinstaller spikesystem.py -F -w -i 1.ico
 import datetime
 import os
+import socket
 import threading
 import time
 import tkinter
@@ -13,6 +14,7 @@ from tkinter import messagebox
 
 import ntplib
 import pyautogui as pyautogui
+import requests.exceptions
 from selenium import webdriver  # 导入webdriver模块
 from selenium.common.exceptions import WebDriverException, NoSuchElementException, InvalidSessionIdException
 from selenium.webdriver.chrome.options import Options as chromeOptions
@@ -28,35 +30,37 @@ from webdriver_manager.microsoft import EdgeChromiumDriverManager
 
 
 # 服务器对时
-def verify_ntp_time(time_server):
-    count = 0
-    while True:
-        try:
-            response = ntplib.NTPClient().request(time_server)
-            ts = response.tx_time
-            _date = time.strftime('%Y-%m-%d', time.localtime(ts))
-            _time = time.strftime('%X', time.localtime(ts))
-            os.system('date {} && time {}'.format(_date, _time))
-            t1 = time.strftime('%Y-%m-%d %X', time.localtime(ts))
-            t2 = datetime.datetime.now().strftime('%Y-%m-%d %X')
-            if count == 2:  # 防止对时死循环
-                return False
-            if t1 == t2:
-                return True
-            else:
-                count += 1
-        except Exception:
-            pass
+def verify_ntp_time(time_server, mode):
+    try:
+        response = ntplib.NTPClient().request(time_server)
+        ts = response.tx_time
+        _date = time.strftime('%Y-%m-%d', time.localtime(ts))
+        _time = time.strftime('%X', time.localtime(ts))
+        os.system('date {} && time {}'.format(_date, _time))
+        ntp = time.strftime('%Y-%m-%d %X', time.localtime(ts))
+        local = datetime.datetime.now().strftime('%Y-%m-%d %X')
+        if mode == 'auto':
+            if ntp == local:
+                messagebox.showinfo('提示', '自动对时成功')
+        else:
+            if ntp == local:
+                messagebox.showinfo('提示', '手动对时成功')
+    except socket.gaierror:
+        messagebox.showerror('错误', '对时失败\n请检查网络连接后再手动对时')
+        return False
+    except ntplib.NTPException:
+        messagebox.showwarning('警告', '对时失败\n时间服务器无响应\n请手动NTP对时或选择其他NTP服务器')
+        return False
 
 
 # 对时国家授时中心
-def ntp_timing_china():
-    return verify_ntp_time('ntp.api.bz')
+def ntp_timing_china(mode='manual'):
+    verify_ntp_time('ntp.api.bz', mode)
 
 
 # 对时阿里云NTP服务器
-def ntp_timing_aliyun():
-    return verify_ntp_time('ntp.aliyun.com')
+def ntp_timing_aliyun(mode='manual'):
+    verify_ntp_time('ntp.aliyun.com', mode)
 
 
 # 时间自动优化
@@ -176,33 +180,43 @@ class SpikeSystem(object):
         self.bar.add_cascade(label='NTP对时', font=font.Font(size=12), menu=self.ntp_time)
         # 给关于菜单添加菜单栏
         # 选择网站(电商)
-        self.url_shop.add_command(label='淘宝', font=font.Font(size=10), command=self.url_taobao)
+        self.url_shop.add_command(label='淘宝', font=font.Font(size=10),
+                                  command=lambda: self.url('https://login.taobao.com/'))
         self.url_shop.add_separator()  # 分割线
-        self.url_shop.add_command(label='京东', font=font.Font(size=10), command=self.url_jd)
+        self.url_shop.add_command(label='京东', font=font.Font(size=10),
+                                  command=lambda: self.url('https://passport.jd.com/new/login.aspx'))
         self.url_shop.add_separator()  # 分割线
-        self.url_shop.add_command(label='苏宁', font=font.Font(size=10), command=self.url_suning)
+        self.url_shop.add_command(label='苏宁', font=font.Font(size=10),
+                                  command=lambda: self.url('https://passport.suning.com/ids/login'))
         # 选择网站(手机)
-        self.url_phone.add_command(label='vivo', font=font.Font(size=10), command=self.url_vivo)
+        self.url_phone.add_command(label='vivo', font=font.Font(size=10),
+                                   command=lambda: self.url('https://passport.vivo.com.cn/#/login'))
         self.url_phone.add_separator()  # 分割线
-        self.url_phone.add_command(label='oppo', font=font.Font(size=10), command=self.url_oppo)
+        self.url_phone.add_command(label='oppo', font=font.Font(size=10),
+                                   command=lambda: self.url('https://id.oppo.com/index.html'))
         self.url_phone.add_separator()
-        self.url_phone.add_command(label='小米', font=font.Font(size=10), command=self.url_xiaomi)
+        self.url_phone.add_command(label='小米', font=font.Font(size=10),
+                                   command=lambda: self.url('https://account.xiaomi.com/fe/service/login/password'))
         self.url_phone.add_separator()
-        self.url_phone.add_command(label='华为', font=font.Font(size=10), command=self.url_huawei)
+        self.url_phone.add_command(label='华为', font=font.Font(size=10),
+                                   command=lambda: self.url('https://id1.cloud.huawei.com/CAS/portal/loginAuth.html'))
         # 购物车选择
-        self.buy_car.add_command(label='自动全选', font=font.Font(size=10), command=self.check_all)
+        self.buy_car.add_command(label='自动全选', font=font.Font(size=10), command=lambda: self.primary('check_all'))
         self.buy_car.add_separator()  # 分割线
-        self.buy_car.add_command(label='手动单选', font=font.Font(size=10), command=self.check_multiple)
+        self.buy_car.add_command(label='手动单选', font=font.Font(size=10), command=lambda: self.primary('untick'))
         # 浏览器选择栏
-        self.choice_browser.add_command(label='Edge浏览器', font=font.Font(size=10), command=self.browser_edge)
+        self.choice_browser.add_command(label='Edge浏览器', font=font.Font(size=10),
+                                        command=lambda: self.browser('edge'))
         self.choice_browser.add_separator()  # 分割线
-        self.choice_browser.add_command(label='谷歌浏览器', font=font.Font(size=10), command=self.browser_chrome)
+        self.choice_browser.add_command(label='谷歌浏览器', font=font.Font(size=10),
+                                        command=lambda: self.browser('chrome'))
         self.choice_browser.add_separator()  # 分割线
-        self.choice_browser.add_command(label='火狐浏览器', font=font.Font(size=10), command=self.browser_firefox)
+        self.choice_browser.add_command(label='火狐浏览器', font=font.Font(size=10),
+                                        command=lambda: self.browser('firefox'))
         # 手动NTP对时
-        self.ntp_time.add_command(label='国家授时中心', font=font.Font(size=10), command=ntp_timing_china)
+        self.ntp_time.add_command(label='授时中心(默认)', font=font.Font(size=10), command=ntp_timing_china)
         self.ntp_time.add_separator()  # 分割线
-        self.ntp_time.add_command(label='阿里云', font=font.Font(size=10), command=ntp_timing_aliyun)
+        self.ntp_time.add_command(label='阿里云(推荐)', font=font.Font(size=10), command=ntp_timing_aliyun)
         # 将菜单栏放入主窗口
         self.window.config(menu=self.bar)
         # 容器1
@@ -248,49 +262,17 @@ class SpikeSystem(object):
         self.button.pack()  # 显示按钮
 
     # 网址选择
-    def url_taobao(self):  # 选择淘宝
-        self.url_path = 'https://login.taobao.com/'
-        ntp_timing_china()
-
-    def url_jd(self):  # 选择京东
-        self.url_path = 'https://passport.jd.com/new/login.aspx'
-        ntp_timing_china()
-
-    def url_suning(self):  # 选择苏宁易购
-        self.url_path = 'https://passport.suning.com/ids/login'
-        ntp_timing_china()
-
-    def url_vivo(self):  # 选择vivo
-        self.url_path = 'https://passport.vivo.com.cn/#/login'
-        ntp_timing_china()
-
-    def url_oppo(self):  # 选择oppo
-        self.url_path = 'https://id.oppo.com/index.html'
-        ntp_timing_china()
-
-    def url_xiaomi(self):  # 选择小米
-        self.url_path = 'https://account.xiaomi.com/fe/service/login/password'
-        ntp_timing_china()
-
-    def url_huawei(self):  # 选择华为
-        self.url_path = 'https://id1.cloud.huawei.com/CAS/portal/loginAuth.html'
+    def url(self, url):
+        self.url_path = url
+        ntp_timing_china('auto')
 
     # 购物车选择
-    def check_all(self):  # 全选购物车
-        self.choice = 'check_all'
-
-    def check_multiple(self):  # 手动单选购物车
-        self.choice = 'untick'
+    def primary(self, choice):
+        self.choice = choice
 
     # 浏览器选择
-    def browser_edge(self):  # 选择edge浏览器
-        self.path = 'edge'
-
-    def browser_chrome(self):  # 选择谷歌浏览器
-        self.path = 'chrome'
-
-    def browser_firefox(self):  # 选择火狐浏览器
-        self.path = 'firefox'
+    def browser(self, browser):
+        self.path = browser
 
     # 多线程
     def add_thread(self):
@@ -379,22 +361,26 @@ class SpikeSystem(object):
         online_driver = None
         browser_service = {'edge': edgeService, 'chrome': chromeService, 'firefox': firefoxService}  # 新特性service容器
         browser = {'edge': webdriver.Edge, 'chrome': webdriver.Chrome, 'firefox': webdriver.Firefox}  # 选择浏览器
-        if self.path == 'edge':
-            online_driver = EdgeChromiumDriverManager().install()
-            self.options = edgeOptions()
-        elif self.path == 'chrome':
-            online_driver = ChromeDriverManager().install()
-            self.options = chromeOptions()
-        elif self.path == 'firefox':
-            online_driver = GeckoDriverManager().install()
-            self.options = firefoxOptions()
         try:
+            if self.path == 'edge':
+                online_driver = EdgeChromiumDriverManager().install()
+                self.options = edgeOptions()
+            elif self.path == 'chrome':
+                online_driver = ChromeDriverManager().install()
+                self.options = chromeOptions()
+            elif self.path == 'firefox':
+                online_driver = GeckoDriverManager().install()
+                self.options = firefoxOptions()
             self.options.add_argument("--disable-blink-features")
             self.options.add_argument("--disable-blink-features=AutomationControlled")
             service = browser_service[self.path](online_driver)  # service容器
             self.driver = browser[self.path](service=service, options=self.options)  # 启动浏览器驱动
         except WebDriverException:
             messagebox.showerror(title='错误:启动失败', message='请确认是否安装了相应的浏览器')
+        except requests.exceptions.SSLError:
+            messagebox.showwarning('警告', '请检测并关闭VPN应用')
+        except requests.exceptions.ConnectionError:
+            messagebox.showerror('错误', '请确认网络连接是否正常')
         return self.driver
 
     # 登录函数
@@ -560,7 +546,7 @@ class SpikeSystem(object):
     # 苏宁函数
     def suning(self):
         self.login('//*[@id="LOGIN_ADVISE"]', 'https://shopping.suning.com/cart.do#resize:380,450')
-        self.check('//*[@id="chooseAllCheckFrame2"]', '//*[@id="cart-body"]/div/h2/a')
+        self.check('//*[@id="chooseAllCheckFrame2"]')
         self.seckill('//*[@id="cart-wrapper"]/div[3]/div/div/div[2]/div[2]/a', '//*[@id="submit-btn"]')
 
     # vivo函数
@@ -582,17 +568,16 @@ class SpikeSystem(object):
     def xiaomi(self):
         self.login('//*[@id="root"]/div/div/div[2]/div/div/div[1]/div[1]', 'https://www.mi.com/shop/buy/cart',
                    '//*[@id="root"]/div/div/div[2]/div/div/div[2]/div/div[1]/div[1]')
-        self.check('//*[@id="app"]/div[2]/div/div/div/div[1]/div[2]/div[1]/div[1]/i',
-                   '//*[@id="app"]/div[2]/div/div/div/div/div[1]/a[1]')
-        # //*[@id="stat_e3c9df7196008778"]/div[2]/div[2]/div/div/div/div[3]/button[1]
+        self.check('//*[@id="stat_e3c9df7196008778"]/div[2]/div[2]/div/div/div/div[3]/button[1]',
+                   '//*[@id="app"]/div[2]/div/div/div/div[1]/div[2]/div[1]/div[1]/i')
+        '//*[@id="stat_e3c9df7196008778"]/div[2]/div[2]/div/div/div/div[3]/button[1]'
         self.seckill('//*[@id="app"]/div[2]/div/div/div/div[1]/div[4]/span/a',
                      '//*[@id="app"]/div[2]/div/div/div[2]/div/div[6]/div/div/a[1]')
 
     # 华为函数
     def huawei(self):
         self.login('/html/body/div/div/div[1]/div[3]/div[2]/span/span', 'https://www.vmall.com/cart', )
-        self.check('//*[@id="app"]/div[2]/div[3]/div[4]/div/div[1]/label/input',
-                   '//*[@id="app"]/div[2]/div[3]/div[1]/a')
+        self.check('//*[@id="app"]/div[2]/div[3]/div[4]/div/div[1]/label/input')
         self.seckill('//*[@id="app"]/div[2]/div[3]/div[4]/div/div[2]/a', '//*[@id="checkoutSubmit"]')
 
 
