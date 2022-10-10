@@ -24,6 +24,8 @@ from selenium.webdriver.edge.options import Options as edgeOptions
 from selenium.webdriver.edge.service import Service as edgeService
 from selenium.webdriver.firefox.options import Options as firefoxOptions
 from selenium.webdriver.firefox.service import Service as firefoxService
+from selenium.webdriver.support import expected_conditions as ec
+from selenium.webdriver.support.wait import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
@@ -144,10 +146,10 @@ class SpikeSystem(object):
     # 启动程序
     def __init__(self):
         self.options = None
-        self.path = None  # 浏览器选择
+        self.browser = 'edge'  # 浏览器选择
         self.thread = None  # 多线程
         self.driver = None  # 驱动
-        self.choice = None  # 购物车选择
+        self.choice = 'check_all'  # 购物车选择
         self.url_path = None  # 网址
         self.buy_time = None  # 秒杀时间
         self.password = None  # 支付密码
@@ -201,18 +203,19 @@ class SpikeSystem(object):
         self.url_phone.add_command(label='华为', font=font.Font(size=10),
                                    command=lambda: self.url('https://id1.cloud.huawei.com/CAS/portal/loginAuth.html'))
         # 购物车选择
-        self.buy_car.add_command(label='自动全选', font=font.Font(size=10), command=lambda: self.primary('check_all'))
+        self.buy_car.add_command(label='自动全选(默认)', font=font.Font(size=10),
+                                 command=lambda: self.primary('check_all'))
         self.buy_car.add_separator()  # 分割线
-        self.buy_car.add_command(label='手动单选', font=font.Font(size=10), command=lambda: self.primary('untick'))
+        self.buy_car.add_command(label='手动单选', font=font.Font(size=10), command=lambda: self.primary('manual'))
         # 浏览器选择栏
-        self.choice_browser.add_command(label='Edge浏览器', font=font.Font(size=10),
-                                        command=lambda: self.browser('edge'))
+        self.choice_browser.add_command(label='Edge浏览器(默认)', font=font.Font(size=10),
+                                        command=lambda: self.browser_choice('edge'))
         self.choice_browser.add_separator()  # 分割线
         self.choice_browser.add_command(label='谷歌浏览器', font=font.Font(size=10),
-                                        command=lambda: self.browser('chrome'))
+                                        command=lambda: self.browser_choice('chrome'))
         self.choice_browser.add_separator()  # 分割线
         self.choice_browser.add_command(label='火狐浏览器', font=font.Font(size=10),
-                                        command=lambda: self.browser('firefox'))
+                                        command=lambda: self.browser_choice('firefox'))
         # 手动NTP对时
         self.ntp_time.add_command(label='授时中心(默认)', font=font.Font(size=10), command=ntp_timing_china)
         self.ntp_time.add_separator()  # 分割线
@@ -264,15 +267,16 @@ class SpikeSystem(object):
     # 网址选择
     def url(self, url):
         self.url_path = url
-        ntp_timing_china('auto')
+        # ntp_timing_china('auto')
+        ntp_timing_aliyun('auto')
 
     # 购物车选择
     def primary(self, choice):
         self.choice = choice
 
     # 浏览器选择
-    def browser(self, browser):
-        self.path = browser
+    def browser_choice(self, browser):
+        self.browser = browser
 
     # 多线程
     def add_thread(self):
@@ -303,12 +307,9 @@ class SpikeSystem(object):
         if self.url_path is None:
             messagebox.showinfo(title='提示', message='请选择网站')
             return
-        elif self.choice is None:
-            messagebox.showinfo(title='提示', message='请选择是否全选购物车')
-            return
-        elif self.path is None:
-            messagebox.showinfo(title='提示', message='请选择浏览器')
-            return
+        # elif self.choice is None:
+        #     messagebox.showinfo(title='提示', message='请选择是否全选购物车')
+        #     return
         elif not buy_time:
             messagebox.showinfo(title='提示', message='请输入秒杀时间')
             return
@@ -354,6 +355,7 @@ class SpikeSystem(object):
     # 浏览器驱动函数
     def drivers(self):
         self.driver = self.online_driver()
+        self.driver.implicitly_wait(5)  # 隐式等待
         return self.driver  # 返回浏览器驱动程序
 
     # 调用在线驱动
@@ -362,19 +364,19 @@ class SpikeSystem(object):
         browser_service = {'edge': edgeService, 'chrome': chromeService, 'firefox': firefoxService}  # 新特性service容器
         browser = {'edge': webdriver.Edge, 'chrome': webdriver.Chrome, 'firefox': webdriver.Firefox}  # 选择浏览器
         try:
-            if self.path == 'edge':
+            if self.browser == 'edge':
                 online_driver = EdgeChromiumDriverManager().install()
                 self.options = edgeOptions()
-            elif self.path == 'chrome':
+            elif self.browser == 'chrome':
                 online_driver = ChromeDriverManager().install()
                 self.options = chromeOptions()
-            elif self.path == 'firefox':
+            elif self.browser == 'firefox':
                 online_driver = GeckoDriverManager().install()
                 self.options = firefoxOptions()
             self.options.add_argument("--disable-blink-features")
             self.options.add_argument("--disable-blink-features=AutomationControlled")
-            service = browser_service[self.path](online_driver)  # service容器
-            self.driver = browser[self.path](service=service, options=self.options)  # 启动浏览器驱动
+            service = browser_service[self.browser](online_driver)  # service容器
+            self.driver = browser[self.browser](service=service, options=self.options)  # 启动浏览器驱动
         except WebDriverException:
             messagebox.showerror(title='错误:启动失败', message='请确认是否安装了相应的浏览器')
         except requests.exceptions.SSLError:
@@ -384,66 +386,54 @@ class SpikeSystem(object):
         return self.driver
 
     # 登录函数
-    def login(self, detection, url, qr=None):
+    def login(self, url, detection, exist=True, qr=None):
         """
-        :param detection: 传入当前页面存在的元素Xpath,用以检测是否离开当前页面
         :param url: 要跳转的购物车链接地址
-        :param qr: 默认为空,如果默认没有展示二维码,则可以传入二维码的Xpath
+        :param detection: 传入当前页面存在的元素,用以检测是否离开当前页面
+        :param exist: 默认为真，表示detection在当前页面，假表示在下一页面
+        :param qr: 默认为空,表示不需要点击扫码登录,否则传入扫码登录的元素
         :return: 布尔值
         """
         self.driver.get(self.url_path)
-        sleep(5)
         if qr is None:
             pass
         else:
-            while True:
-                try:
-                    if self.driver.find_element(By.XPATH, qr):
-                        self.driver.find_element(By.XPATH, qr).click()
-                        break
-                except NoSuchElementException:
-                    pass
-                except Exception:
-                    return False
-        while True:
-            try:
-                if self.driver.find_element(By.XPATH, detection).is_displayed():
-                    sleep(1)
-            except NoSuchElementException:
-                self.driver.get(url)
-                break
-            except Exception:
-                return False
+            WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, qr)))
+            self.driver.find_element(By.XPATH, qr).click()
+        if exist:
+            WebDriverWait(self.driver, 60).until_not(ec.visibility_of_element_located((By.XPATH, detection)))
+            self.driver.get(url)
+        else:
+            WebDriverWait(self.driver, 60).until(ec.presence_of_element_located((By.XPATH, detection)))
+            self.driver.get(url)
 
     # 全选函数
-    def check(self, check_box, check_login=None):
+    def check(self, check_box, check_login=None, agree=None):
         """
         :param check_box: 传入全选框的Xpath
-        :param check_login: 默认值为空, 传入购物车页面需要二次点击登录刷新cookie
+        :param check_login: 默认值为空, 传入购物车页面需要二次点击登录的元素
+        :param agree: 默认值为空, 传入购物车页面需要点击同意的元素
         :return: 布尔值
         """
         if check_login is None:
             pass
         else:
-            while True:
-                try:
-                    # 全选购物车
-                    self.driver.find_element(By.XPATH, check_login).click()
-                    break
-                except NoSuchElementException:
-                    sleep(1)
-                except Exception:
-                    return False
+            # 二次点击登录
+            WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, check_login)))
+            self.driver.find_element(By.XPATH, check_login).click()
+            # 同意协议
+            if agree is None:
+                pass
+            else:
+                WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, agree)))
+                self.driver.find_element(By.XPATH, agree).click()
         if self.choice == 'check_all':
-            while True:
-                try:
-                    # 全选购物车
-                    self.driver.find_element(By.XPATH, check_box).click()
-                    break
-                except NoSuchElementException:
-                    sleep(1)
-                except Exception:
-                    return False
+            # 全选购物车
+            if self.driver.find_element(By.XPATH, check_box).is_selected():
+                pass
+            else:
+                WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, check_box)))
+                self.driver.find_element(By.XPATH, check_box).click()
         else:
             pass
 
@@ -497,13 +487,13 @@ class SpikeSystem(object):
                     self.driver.find_element(By.XPATH, click_to_pay).click()
                     break
                 except NoSuchElementException:
-                    sleep(1)
+                    # sleep(1)
+                    pass
                 except Exception:
                     return False
         if self.password is not None and self.password.isspace() is False and self.password.isnumeric() and len(
                 self.password) == 6:
             while True:
-                sleep(1)
                 try:
                     # 判断是否有输入框
                     if self.driver.find_element(By.XPATH, input_box):
@@ -526,57 +516,57 @@ class SpikeSystem(object):
 
     # 淘宝函数
     def taobao(self):
-        self.login('//*[@id="header"]/div/div/a[2]', 'https://cart.taobao.com/cart.htm',
-                   '//*[@id="login"]/div[1]/i')
+        self.login('https://cart.taobao.com/cart.htm',
+                   '//*[@id="header"]/div/div/a[2]',
+                   qr='//*[@id="login"]/div[1]/i')
         self.check('//*[@id="J_SelectAll1"]/div/label')
         self.seckill('//*[@id="J_Go"]', '//*[@id="submitOrderPC_1"]/div[1]/a[2]')
         self.pay('//*[@id="payPassword_container"]/div')
 
     # 京东函数
     def jd(self):
-        self.login('//*[@id="content"]/div[2]/div[1]/div/div[5]/div/div[2]/div[1]/img',
-                   'https://cart.jd.com/cart_index')
+        self.login('https://cart.jd.com/cart_index', '/html/body/div[1]/a')
         self.check('//*[@id="cart-body"]/div[2]/div[3]/div[1]/div/input')
-        self.seckill(
-            '//*[@id="cart-body"]/div[2]/div[16]/div/div[2]/div/div/div/div[2]/div[2]/div/div[1]/a/b',
-            '//*[@id="order-submit"]')
+        self.seckill('//*[@id="cart-body"]/div[2]/div[16]/div/div[2]/div/div/div/div[2]/div[2]/div/div[1]/a/b',
+                     '//*[@id="order-submit"]')
         self.pay('//*[@id="validateShortFake"]', '//*[@id="baseMode"]/div/div[2]/div/div[2]/div/div/div[1]',
                  '//*[@id="indexBlurId"]/div/div[1]/div[2]/div/div[2]/div[2]/div[2]/div/div/div[1]')
 
     # 苏宁函数
     def suning(self):
-        self.login('//*[@id="LOGIN_ADVISE"]', 'https://shopping.suning.com/cart.do#resize:380,450')
+        self.login('https://shopping.suning.com/cart.do#resize:380,450', '//*[@id="LOGIN_ADVISE"]')
         self.check('//*[@id="chooseAllCheckFrame2"]')
         self.seckill('//*[@id="cart-wrapper"]/div[3]/div/div/div[2]/div[2]/a', '//*[@id="submit-btn"]')
 
     # vivo函数
     def vivo(self):
-        self.login('/html/body/div[1]/div[3]/div[1]/div/div[1]/a', 'https://shop.vivo.com.cn/shoppingcart',
-                   '/html/body/div[1]/div[3]/div[1]/div/div[2]/div[1]/img[2]')
+        self.login('https://shop.vivo.com.cn/shoppingcart', '/html/body/div[1]/div[3]/div[1]/div[3]/div[1]', False,
+                   qr='/html/body/div[1]/div[3]/div[1]/div/div[2]/div[1]/img[2]')
         self.check('//*[@id="fixed-bottom-bar"]/div/div/div[1]/ul/li[1]/label/a')
         self.seckill('//*[@id="fixed-bottom-bar"]/div/div/div[2]/table/tr/td[2]/button', 'btn-submit')
 
     # oppo函数
     def oppo(self):
-        self.login('//*[@id="root"]/div/div[3]/div/div[1]/div[1]', 'https://www.opposhop.cn/cn/web/cart',
-                   '//*[@id="root"]/div/div[3]/div/div[2]/div/div[1]/div[2]')
+        self.login('https://www.opposhop.cn/cn/web/cart', '//*[@id="root"]/div/div[3]/div/div[1]/div[1]',
+                   qr='//*[@id="root"]/div/div[3]/div/div[2]/div/div[1]/div[2]')
         self.check('//*[@id="input-35"]')
         self.seckill('//*[@id="app"]/div/div[1]/main/div/div[2]/div/div[1]/div[3]/button',
                      '//*[@id="app"]/div/div[1]/div/main/div/div[8]/div/div/div[3]/button')
 
     # 小米函数
     def xiaomi(self):
-        self.login('//*[@id="root"]/div/div/div[2]/div/div/div[1]/div[1]', 'https://www.mi.com/shop/buy/cart',
+        self.login('https://www.mi.com/shop/buy/cart',
+                   '//*[@id="root"]/div/div/div[1]/div[2]/span/span', False,
                    '//*[@id="root"]/div/div/div[2]/div/div/div[2]/div/div[1]/div[1]')
-        self.check('//*[@id="stat_e3c9df7196008778"]/div[2]/div[2]/div/div/div/div[3]/button[1]',
-                   '//*[@id="app"]/div[2]/div/div/div/div[1]/div[2]/div[1]/div[1]/i')
-        '//*[@id="stat_e3c9df7196008778"]/div[2]/div[2]/div/div/div/div[3]/button[1]'
+        self.check('//*[@id="app"]/div[2]/div/div/div/div[1]/div[2]/div[1]/div[1]/i',
+                   '/html/body/div/div[2]/div/div/div/div/div[1]/a[1]',
+                   '//*[@id="stat_e3c9df7196008778"]/div[2]/div[2]/div/div/div/div[3]/button[1]')
         self.seckill('//*[@id="app"]/div[2]/div/div/div/div[1]/div[4]/span/a',
                      '//*[@id="app"]/div[2]/div/div/div[2]/div/div[6]/div/div/a[1]')
 
     # 华为函数
     def huawei(self):
-        self.login('/html/body/div/div/div[1]/div[3]/div[2]/span/span', 'https://www.vmall.com/cart', )
+        self.login('https://www.vmall.com/cart', '/html/body/div/div/div[1]/div[3]/div[2]/span/span')
         self.check('//*[@id="app"]/div[2]/div[3]/div[4]/div/div[1]/label/input')
         self.seckill('//*[@id="app"]/div[2]/div[3]/div[4]/div/div[2]/a', '//*[@id="checkoutSubmit"]')
 
