@@ -16,7 +16,7 @@ import ntplib
 import pyautogui as pyautogui
 import requests.exceptions
 from selenium import webdriver  # 导入webdriver模块
-from selenium.common.exceptions import WebDriverException, NoSuchElementException, InvalidSessionIdException
+from selenium.common.exceptions import WebDriverException, InvalidSessionIdException
 from selenium.webdriver.chrome.options import Options as chromeOptions
 from selenium.webdriver.chrome.service import Service as chromeService
 from selenium.webdriver.common.by import By
@@ -153,7 +153,7 @@ class SpikeSystem(object):
         self.url_path = None  # 网址
         self.buy_time = None  # 秒杀时间
         self.password = None  # 支付密码
-        self.time_remaining = datetime.timedelta(seconds=6)
+        self.time_remaining = datetime.timedelta(seconds=4)
         self.window = Tk()  # 建立窗口window
         self.window.title('秒杀系统4.1(作者:Kearns201)')  # 窗口名称
         # 窗口大小参数(宽＊高)
@@ -285,6 +285,7 @@ class SpikeSystem(object):
             messagebox.showinfo('提示', '参数已更新\n点击确定重新调用程序')
             try:
                 self.driver.quit()
+                self.thread = None
             except AttributeError:
                 pass
             finally:
@@ -307,9 +308,9 @@ class SpikeSystem(object):
         if self.url_path is None:
             messagebox.showinfo(title='提示', message='请选择网站')
             return
-        # elif self.choice is None:
-        #     messagebox.showinfo(title='提示', message='请选择是否全选购物车')
-        #     return
+        elif self.choice is None:
+            messagebox.showinfo(title='提示', message='请选择是否全选购物车')
+            return
         elif not buy_time:
             messagebox.showinfo(title='提示', message='请输入秒杀时间')
             return
@@ -337,25 +338,23 @@ class SpikeSystem(object):
                 if self.url_path == 'https://passport.vivo.com.cn/#/login':
                     self.vivo()  # vivo
                 if self.url_path == 'https://id.oppo.com/index.html':
-                    self.oppo()
+                    self.oppo()  # oppo
                 if self.url_path == 'https://account.xiaomi.com/fe/service/login/password':
-                    self.xiaomi()
+                    self.xiaomi()  # 小米
                 if self.url_path == 'https://id1.cloud.huawei.com/CAS/portal/loginAuth.html':
-                    self.huawei()
-                self.quit()  # 销毁主窗口
+                    self.huawei()  # 华为
+                self.window.destroy()  # 销毁主窗口
         except InvalidSessionIdException:
             return False
-        except WebDriverException:
+        except WebDriverException:  # 驱动未调用成功
             return False
-
-    # 销毁主窗口
-    def quit(self):
-        self.window.destroy()
+        except Exception:
+            return False
 
     # 浏览器驱动函数
     def drivers(self):
         self.driver = self.online_driver()
-        self.driver.implicitly_wait(5)  # 隐式等待
+        self.driver.implicitly_wait(8)  # 隐式等待
         return self.driver  # 返回浏览器驱动程序
 
     # 调用在线驱动
@@ -398,8 +397,7 @@ class SpikeSystem(object):
         if qr is None:
             pass
         else:
-            WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, qr)))
-            self.driver.find_element(By.XPATH, qr).click()
+            WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, qr))).click()
         if exist:
             WebDriverWait(self.driver, 60).until_not(ec.visibility_of_element_located((By.XPATH, detection)))
             self.driver.get(url)
@@ -419,20 +417,18 @@ class SpikeSystem(object):
             pass
         else:
             # 二次点击登录
-            WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, check_login)))
-            self.driver.find_element(By.XPATH, check_login).click()
+            WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, check_login))).click()
             # 同意协议
             if agree is None:
                 pass
             else:
-                WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, agree)))
-                self.driver.find_element(By.XPATH, agree).click()
+                WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, agree))).click()
         if self.choice == 'check_all':
             # 全选购物车
+            WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, check_box)))  # 等待全选框加载完毕
             if self.driver.find_element(By.XPATH, check_box).is_selected():
                 pass
             else:
-                WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, check_box)))
                 self.driver.find_element(By.XPATH, check_box).click()
         else:
             pass
@@ -451,24 +447,12 @@ class SpikeSystem(object):
             # 判断当前时间是否大于设定时间
             if now_time >= self.buy_time:
                 # 如果大于设定时间,则点击购买按钮
-                try:
-                    self.driver.find_element(By.XPATH, settlement).click()
-                    break
-                except NoSuchElementException:
-                    pass
-                except Exception:
-                    return False
-            if (self.buy_time - now_time) > self.time_remaining:
-                sleep(4.5)
-        while True:
-            try:
-                # 循环点击提交按钮
-                self.driver.find_element(By.XPATH, submit).click()
+                self.driver.find_element(By.XPATH, settlement).click()
+                # 点击提交按钮
+                WebDriverWait(self.driver, 5, 0.001).until(ec.presence_of_element_located((By.XPATH, submit))).click()
                 break
-            except NoSuchElementException:
-                pass
-            except Exception:
-                return False
+            if (self.buy_time - now_time) > self.time_remaining:
+                sleep(3)
 
     # 付款函数
     def pay(self, input_box, ensure=None, click_to_pay=None):
@@ -481,36 +465,20 @@ class SpikeSystem(object):
         if click_to_pay is None:
             pass
         else:
-            # 循环点击支付按钮
-            while True:
-                try:
-                    self.driver.find_element(By.XPATH, click_to_pay).click()
-                    break
-                except NoSuchElementException:
-                    # sleep(1)
-                    pass
-                except Exception:
-                    return False
+            # 点击支付按钮
+            WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, click_to_pay))).click()
         if self.password is not None and self.password.isspace() is False and self.password.isnumeric() and len(
                 self.password) == 6:
-            while True:
-                try:
-                    # 判断是否有输入框
-                    if self.driver.find_element(By.XPATH, input_box):
-                        for i in range(len(self.password)):
-                            pyautogui.press(self.password[i])
-                        sleep(0.5)
-                        if ensure is None:
-                            pyautogui.press('enter')
-                        else:
-                            self.driver.find_element(By.XPATH, ensure).click()
-                        sleep(8)
-                        self.driver.quit()  # 退出浏览器函数
-                        break
-                except NoSuchElementException:
-                    pass
-                except Exception:
-                    return False
+            # 判断是否有输入框
+            WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, input_box)))
+            for i in range(len(self.password)):
+                pyautogui.press(self.password[i])
+            if ensure is None:
+                pyautogui.press('enter')
+            else:
+                WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, ensure))).click()
+            sleep(10)
+            self.driver.quit()  # 退出浏览器函数
         else:
             pass
 
