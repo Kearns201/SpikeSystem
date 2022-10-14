@@ -388,7 +388,7 @@ class SpikeSystem(object):
     def login(self, url, detection, exist=True, qr=None):
         """
         :param url: 要跳转的购物车链接地址
-        :param detection: 传入当前页面存在的元素,用以检测是否离开当前页面
+        :param detection: 用以检测是否离开当前页面
         :param exist: 默认为真，表示detection在当前页面，假表示在下一页面
         :param qr: 默认为空,表示不需要点击扫码登录,否则传入扫码登录的元素
         :return: 布尔值
@@ -434,7 +434,7 @@ class SpikeSystem(object):
             pass
 
     # 秒杀函数
-    def seckill(self, settlement, submit):
+    def seckill(self, settlement, submit, address=None):
         """
         :param settlement: 传入购物车页面的结算按钮Xpath
         :param submit: 传入地址确认页面的提交按钮Xpath
@@ -448,6 +448,12 @@ class SpikeSystem(object):
             if now_time >= self.buy_time:
                 # 如果大于设定时间,则点击购买按钮
                 self.driver.find_element(By.XPATH, settlement).click()
+                # 选择地址
+                if address is None:
+                    pass
+                else:
+                    WebDriverWait(self.driver, 5, 0.001).until(
+                        ec.presence_of_element_located((By.XPATH, address))).click()
                 # 点击提交按钮
                 WebDriverWait(self.driver, 5, 0.001).until(ec.presence_of_element_located((By.XPATH, submit))).click()
                 break
@@ -455,10 +461,10 @@ class SpikeSystem(object):
                 sleep(3)
 
     # 付款函数
-    def pay(self, input_box, ensure=None, click_to_pay=None):
+    def pay(self, input_box=None, enter=None, click_to_pay=None):
         """
         :param input_box: 传入密码输入框Xpath
-        :param ensure: 默认为空,传入确认付款按钮Xpath
+        :param enter: 默认为空,传入确认付款按钮Xpath
         :param click_to_pay: 默认为空,传入点击去付款调出输入框按钮Xpath
         :return: 布尔值
         """
@@ -467,20 +473,23 @@ class SpikeSystem(object):
         else:
             # 点击支付按钮
             WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, click_to_pay))).click()
-        if self.password is not None and self.password.isspace() is False and self.password.isnumeric() and len(
-                self.password) == 6:
-            # 判断是否有输入框
-            WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, input_box)))
-            for i in range(len(self.password)):
-                pyautogui.press(self.password[i])
-            if ensure is None:
-                pyautogui.press('enter')
+            if input_box is None:
+                pass
             else:
-                WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, ensure))).click()
-            sleep(10)
-            self.driver.quit()  # 退出浏览器函数
-        else:
-            pass
+                if self.password is not None and self.password.isspace() is False and self.password.isnumeric() and len(
+                        self.password) == 6:
+                    # 判断是否有输入框
+                    WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, input_box)))
+                    for i in range(len(self.password)):
+                        pyautogui.press(self.password[i])
+                    if enter is None:
+                        pyautogui.press('enter')
+                    else:
+                        WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, enter))).click()
+                    sleep(10)
+                    self.driver.quit()  # 退出浏览器函数
+                else:
+                    pass
 
     # 淘宝函数
     def taobao(self):
@@ -508,16 +517,16 @@ class SpikeSystem(object):
 
     # vivo函数
     def vivo(self):
-        self.login('https://shop.vivo.com.cn/shoppingcart', '/html/body/div[1]/div[3]/div[1]/div[3]/div[1]', False,
+        self.login('https://shop.vivo.com.cn/shoppingcart', '/html/body/div[1]/div[3]/div[1]/div/div[1]/a',
                    qr='/html/body/div[1]/div[3]/div[1]/div/div[2]/div[1]/img[2]')
         self.check('//*[@id="fixed-bottom-bar"]/div/div/div[1]/ul/li[1]/label/a')
         self.seckill('//*[@id="fixed-bottom-bar"]/div/div/div[2]/table/tr/td[2]/button', 'btn-submit')
 
     # oppo函数
     def oppo(self):
-        self.login('https://www.opposhop.cn/cn/web/cart', '//*[@id="root"]/div/div[3]/div/div[1]/div[1]',
+        self.login('https://www.opposhop.cn/cn/web/cart', '//*[@id="root"]/div/div[1]/div/div[2]/div[3]', False,
                    qr='//*[@id="root"]/div/div[3]/div/div[2]/div/div[1]/div[2]')
-        self.check('//*[@id="input-35"]')
+        self.check('//*[@id="input-36"]')
         self.seckill('//*[@id="app"]/div/div[1]/main/div/div[2]/div/div[1]/div[3]/button',
                      '//*[@id="app"]/div/div[1]/div/main/div/div[8]/div/div/div[3]/button')
 
@@ -530,13 +539,17 @@ class SpikeSystem(object):
                    '/html/body/div/div[2]/div/div/div/div/div[1]/a[1]',
                    '//*[@id="stat_e3c9df7196008778"]/div[2]/div[2]/div/div/div/div[3]/button[1]')
         self.seckill('//*[@id="app"]/div[2]/div/div/div/div[1]/div[4]/span/a',
-                     '//*[@id="app"]/div[2]/div/div/div[2]/div/div[6]/div/div/a[1]')
+                     '//*[@id="app"]/div[2]/div/div/div[2]/div/div[6]/div[2]/div/a[1]'
+                     , '//*[@id="app"]/div[2]/div/div/div[2]/div/div[2]/div[2]/div[1]')
+        self.pay(click_to_pay='//*[@id="app"]/div[2]/div/div/div[2]/div[1]/div[2]/div[2]/ul/li[1]/img')
 
     # 华为函数
     def huawei(self):
         self.login('https://www.vmall.com/cart', '/html/body/div/div/div[1]/div[3]/div[2]/span/span')
-        self.check('//*[@id="app"]/div[2]/div[3]/div[4]/div/div[1]/label/input')
+        self.check('//*[@id="app"]/div[2]/div[3]/div[4]/div/div[1]/label/input',
+                   '//*[@id="app"]/div[2]/div[3]/div[1]/a', '//*[@id="ecBoxID"]/div[2]/div[3]/a[2]')
         self.seckill('//*[@id="app"]/div[2]/div[3]/div[4]/div/div[2]/a', '//*[@id="checkoutSubmit"]')
+        self.pay(click_to_pay='/html/body/div[1]/div/div/ul/li/button')
 
 
 if __name__ == '__main__':
