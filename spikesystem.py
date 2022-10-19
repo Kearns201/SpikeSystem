@@ -614,6 +614,10 @@ class SpikeSystem:
         if account is None:
             pass
         else:
+            if account_login is None:
+                pass
+            else:
+                WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, account_login))).click()
             WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, account))).send_keys(
                 self.account)
             WebDriverWait(self.driver, 10).until(
@@ -748,7 +752,7 @@ class SpikeSystem:
         else:
             self.account_login('https://shopping.suning.com/cart.do#resize:380,450', '//*[@id="LOGIN_ADVISE"]',
                                '//*[@id="userName"]', '//*[@id="password"]',
-                               '//*[@id="loginBtn"]')
+                               '//*[@id="submit"]', '/html/body/div[2]/div[1]/div/div[1]/a[2]')
         self.check('//*[@id="chooseAllCheckFrame2"]')
         self.seckill('//*[@id="cart-wrapper"]/div[3]/div/div/div[2]/div[2]/a', '//*[@id="submit-btn"]')
 
@@ -759,8 +763,10 @@ class SpikeSystem:
                           '/html/body/div[1]/div[3]/div[1]/div/div[2]/div[1]/img[2]')
         else:
             self.account_login('https://shop.vivo.com.cn/shoppingcart', '/html/body/div[1]/div[3]/div[1]/div/div[1]/a',
-                               '//*[@id="loginName"]', '//*[@id="password"]',
-                               '//*[@id="loginBtn"]')
+                               '/html/body/div[1]/div[3]/div[1]/div/div[2]/div[3]/div[2]/div[2]/div[1]/div[1]/input',
+                               '/html/body/div[1]/div[3]/div[1]/div/div[2]/div[3]/div[2]/div[2]/div[1]/div[3]/input',
+                               '/html/body/div[1]/div[3]/div[1]/div/div[2]/div[3]/div[6]',
+                               '/html/body/div[1]/div[3]/div[1]/div/div[2]/div[3]/div[1]/span[2]')
         self.check('//*[@id="fixed-bottom-bar"]/div/div/div[1]/ul/li[1]/label/a')
         self.seckill('//*[@id="fixed-bottom-bar"]/div/div/div[2]/table/tr/td[2]/button', 'btn-submit')
 
@@ -771,8 +777,12 @@ class SpikeSystem:
                           '//*[@id="root"]/div/div[3]/div/div[2]/div/div[1]/div[2]', False)
         else:
             self.account_login('https://www.opposhop.cn/cn/web/cart', '//*[@id="root"]/div/div[1]/div/div[2]/div[3]',
-                               '//*[@id="loginName"]', '//*[@id="password"]',
-                               '//*[@id="loginBtn"]')
+                               '//*[@id="root"]/div/div[3]/div/div[2]/div/div[2]/div[1]/div[2]/div[2]/div/div['
+                               '1]/div/div/div/div[2]/input',
+                               '//*[@id="root"]/div/div[3]/div/div[2]/div/div[2]/div[1]/div[2]/div[2]/div/div['
+                               '2]/div/div/div[1]/input',
+                               '//*[@id="root"]/div/div[3]/div/div[2]/div/div[2]/div[1]/div[2]/div[2]/div/div[4]',
+                               '//*[@id="root"]/div/div[3]/div/div[2]/div/div[2]/div[1]/div[1]/div[2]/span')
         self.check('//*[@id="input-36"]')
         self.seckill('//*[@id="app"]/div/div[1]/main/div/div[2]/div/div[1]/div[3]/button',
                      '//*[@id="app"]/div/div[1]/div/main/div/div[8]/div/div/div[3]/button')
@@ -784,8 +794,10 @@ class SpikeSystem:
                           '//*[@id="root"]/div/div/div[2]/div/div/div[2]/div/div[1]/div[1]', False)
         else:
             self.account_login('https://www.mi.com/shop/buy/cart', '//*[@id="root"]/div/div/div[1]/div[2]/span/span',
-                               '//*[@id="username"]', '//*[@id="pwd"]',
-                               '//*[@id="login-button"]')
+                               '//*[@id="rc-tabs-0-panel-login"]/form/div[1]/div[1]/div[2]/div/div/div/div/input',
+                               '//*[@id="rc-tabs-0-panel-login"]/form/div[1]/div[2]/div/div[1]/div/input',
+                               '//*[@id="rc-tabs-0-panel-login"]/form/div[1]/button',
+                               '//*[@id="rc-tabs-0-panel-login"]/form/div[1]/div[3]/label/span[1]/input')
         self.check('//*[@id="app"]/div[2]/div/div/div/div[1]/div[2]/div[1]/div[1]/i',
                    '/html/body/div/div[2]/div/div/div/div/div[1]/a[1]',
                    '//*[@id="stat_e3c9df7196008778"]/div[2]/div[2]/div/div/div/div[3]/button[1]')
@@ -800,8 +812,9 @@ class SpikeSystem:
             self.qr_login('https://www.vmall.com/cart', '/html/body/div/div/div[1]/div[3]/div[2]/span/span')
         else:
             self.account_login('https://www.vmall.com/cart', '/html/body/div/div/div[1]/div[3]/div[2]/span/span',
-                               '//*[@id="username"]', '//*[@id="password"]',
-                               '//*[@id="login-button"]')
+                               '/html/body/div[1]/div/div[1]/div[3]/div[3]/span[3]/div[1]/form/div[2]/div/div/div/input',
+                               '/html/body/div[1]/div/div[1]/div[3]/div[3]/span[3]/div[1]/form/div[3]/div/div/div/input',
+                               '/html/body/div[1]/div/div[1]/div[3]/div[3]/span[3]/div[1]/div[2]/div/div/div')
         self.check('//*[@id="app"]/div[2]/div[3]/div[4]/div/div[1]/label/input',
                    '//*[@id="app"]/div[2]/div[3]/div[1]/a', '//*[@id="ecBoxID"]/div[2]/div[3]/a[2]')
         self.seckill('//*[@id="app"]/div[2]/div[3]/div[4]/div/div[2]/a', '//*[@id="checkoutSubmit"]')
