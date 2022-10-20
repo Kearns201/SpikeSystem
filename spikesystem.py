@@ -614,16 +614,16 @@ class SpikeSystem:
         if account is None:
             pass
         else:
+            WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, account_login))).click()
             if account_login is None:
                 pass
             else:
-                WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, account_login))).click()
-            WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, account))).send_keys(
-                self.account)
-            WebDriverWait(self.driver, 10).until(
-                ec.presence_of_element_located((By.XPATH, account_password))).send_keys(
-                self.account_password)
-            WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, login_chick))).click()
+                WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, account))).send_keys(
+                    self.account)
+                WebDriverWait(self.driver, 10).until(
+                    ec.presence_of_element_located((By.XPATH, account_password))).send_keys(
+                    self.account_password)
+                WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, login_chick))).click()
         if detection_choice:
             WebDriverWait(self.driver, 100).until_not(ec.visibility_of_element_located((By.XPATH, detection)))
             self.driver.get(url)
