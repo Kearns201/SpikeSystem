@@ -1,4 +1,4 @@
-# pyinstaller spikesystem.py -F -w -i 1.ico
+# pyinstaller spikesystem.py -F -w -i favicon.ico
 import datetime
 import os
 import socket
@@ -16,7 +16,7 @@ import ntplib
 import pyautogui as pyautogui
 import requests.exceptions
 from selenium import webdriver  # 导入webdriver模块
-from selenium.common.exceptions import WebDriverException, InvalidSessionIdException, NoSuchElementException
+from selenium.common.exceptions import WebDriverException, InvalidSessionIdException
 from selenium.webdriver.chrome.options import Options as chromeOptions
 from selenium.webdriver.chrome.service import Service as chromeService
 from selenium.webdriver.common.by import By
@@ -44,20 +44,28 @@ class SpikeSystem_window(Tk):
         self._frame = new_frame
         self._frame.pack()
 
+    def on_ret(self, ev):
+        if self.widgetName == "button":
+            self.invoke()  # 回车确认
+        elif self.widgetName == "entry":
+            self.event_generate('<<NextWindow>>')  # 回车后跳转下一个窗口
+        return "break"
+
     # 网址选择
     def url(self, url):
         self.url_path = url
-        self.ntp_timing_aliyun('auto')
+        self.ntp_timing_china('auto')
 
     # 购物车选择
     def primary(self, choice):
-        self.product_selection = choice
+        self.shoppingcart_selection = choice
 
     # 浏览器选择
     def browser_choice(self, browser):
         self.browser = browser
 
-    def verify_ntp_time(self, time_server, mode):
+    @staticmethod
+    def verify_ntp_time(time_server, mode):
         try:
             response = ntplib.NTPClient().request(time_server)
             ts = response.tx_time
@@ -81,14 +89,15 @@ class SpikeSystem_window(Tk):
 
     # 对时国家授时中心
     def ntp_timing_china(self, mode='manual'):
-        self.verify_ntp_time('ntp.api.bz', mode)
+        self.verify_ntp_time('ntp.ntsc.ac.cn', mode)
 
     # 对时阿里云NTP服务器
     def ntp_timing_aliyun(self, mode='manual'):
         self.verify_ntp_time('ntp.aliyun.com', mode)
 
     # 时间自动优化
-    def cause_time(self):
+    @staticmethod
+    def cause_time():
         compare_month = [4, 6, 9, 11]  # 只有30天的月份
         now_time = list(acquisition_time.now().strftime("%Y-%m-%d %H:%M:%S"))  # 把当前时间转成列表
         now_time[14:19] = '00:00'  # 把时间变为整时
@@ -156,12 +165,27 @@ class SpikeSystem_window(Tk):
         return now_time
 
     # 密码限制
-    def limit_password(self, data):
+    @staticmethod
+    def limit_password(data):
         # 如果不加上==""的话,就会发现删不完。总会剩下一个数字 isdigit函数：isdigit函数方法检测字符串是否只由数字组成。
         if (data.isdigit() and len(data) <= 6) or data == "":
             return True
         else:
             return False
+
+
+class MyEntry(Entry, SpikeSystem_window):
+    def __init__(self, master, **kw):
+        Entry.__init__(self, master, **kw)
+        self.next_widget = None
+        self.bind("<Return>", self.on_ret)
+
+
+class MyButton(Button, SpikeSystem_window):
+    def __init__(self, master, **kw):
+        Button.__init__(self, master, **kw)
+        self.next_widget = None
+        self.bind("<Return>", self.on_ret)
 
 
 class StartPage(Frame, SpikeSystem_window):
@@ -179,10 +203,10 @@ class StartPage(Frame, SpikeSystem_window):
         self.window.geometry(f'{width}x{height}+{int(screen_width)}+{int(screen_height)}')
         # 控制窗口大小不可更改
         self.window.resizable(False, False)
-        Button(self, text="扫码登录", height=2, width=20, bg='#FC5531', bd=8,
-               command=lambda: self.window.switch_frame(QR_code)).pack()
-        Button(self, text="账号登录", height=2, width=20, bg='#FC5531', bd=8,
-               command=lambda: self.window.switch_frame(Account_login)).pack()
+        MyButton(self, text="扫码登录", height=2, width=20, bg='#FC5531', bd=8,
+                 command=lambda: self.window.switch_frame(QR_code)).pack()
+        MyButton(self, text="账号登录", height=2, width=20, bg='#FC5531', bd=8,
+                 command=lambda: self.window.switch_frame(Account_login)).pack()
 
 
 class QR_code(Frame, SpikeSystem_window):
@@ -191,12 +215,12 @@ class QR_code(Frame, SpikeSystem_window):
         Frame.__init__(self, window)
         self.browser = 'edge'  # 浏览器选择
         self.login_selection = 'qr_code'  # 登录方式选择
-        self.product_selection = 'check_all'  # 购物车选择
         self.url_path = None  # 网址
         self.buy_time = None  # 秒杀时间
         self.password = None  # 支付密码
+        self.shoppingcart_selection = None  # 购物车选择
         self.window = window  # 建立窗口window
-        self.window.title('秒杀系统4.1(作者:Kearns201)')  # 窗口名称
+        self.window.title('秒杀系统5.1(作者:Kearns201)')  # 窗口名称
         width = 620
         height = 260
         # 获取屏幕大小并计算起始坐标
@@ -245,7 +269,7 @@ class QR_code(Frame, SpikeSystem_window):
         self.url_phone.add_command(label='华为', font=font.Font(size=10),
                                    command=lambda: self.url('https://id1.cloud.huawei.com/CAS/portal/loginAuth.html'))
         # 购物车选择
-        self.buy_car.add_command(label='自动全选(默认)', font=font.Font(size=10),
+        self.buy_car.add_command(label='自动全选', font=font.Font(size=10),
                                  command=lambda: self.primary('check_all'))
         self.buy_car.add_separator()  # 分割线
         self.buy_car.add_command(label='手动单选', font=font.Font(size=10), command=lambda: self.primary('manual'))
@@ -270,10 +294,10 @@ class QR_code(Frame, SpikeSystem_window):
         self.label_buy_time['text'] = '请输入秒杀/抢购时间(格式:2000-01-01 20:00:00)'
         self.label_buy_time.pack()
         self.text_time = tkinter.StringVar(value=self.cause_time())
-        self.buy_time_entry = Entry(self, width=100, bd=5, justify=CENTER,
-                                    textvariable=self.text_time  # 文本框的值,是一个StringVar()对象,这样与StringVar就能更新
-                                    # 跟踪变量的值的变化,以保证值的变更随时可以显示在界面上
-                                    )  # 文本输入框
+        self.buy_time_entry = MyEntry(self, width=100, bd=5, justify=CENTER,
+                                      textvariable=self.text_time  # 文本框的值,是一个StringVar()对象,这样与StringVar就能更新
+                                      # 跟踪变量的值的变化,以保证值的变更随时可以显示在界面上
+                                      )  # 文本输入框
         self.buy_time_entry.pack()  # 把text放在window上面,显示text这个控件
         self.label_payment_password = Label(self, width=100, height=2, bg='#935167', bd=5, relief=RIDGE,
                                             font=font.Font(size=12))
@@ -281,21 +305,21 @@ class QR_code(Frame, SpikeSystem_window):
         self.label_payment_password.pack()
         # 端口input
         payment_password = self.window.register(self.limit_password)  # 需要将函数包装一下,必要的, 否则会直接调用
-        self.payment_password_entry = Entry(self,  # 置入容器
-                                            width=100, bd=5,
-                                            justify=CENTER,  # 居中对齐显示
-                                            show='*',  # 显示加密
-                                            textvariable=StringVar(),  # 文本框的值,是一个StringVar()对象,这样与StringVar 就能更新
-                                            # 跟踪变量的值的变化,以保证值的变更随时可以显示在界面上
-                                            validate="key",
-                                            # 发生任何变动的时候,就会调用validate-command 这个调动受后面'Key'影响,类似键盘监听 如果换成"focusout"就是光标
-                                            validatecommand=(payment_password, '%P'))
+        self.payment_password_entry = MyEntry(self,  # 置入容器
+                                              width=100, bd=5,
+                                              justify=CENTER,  # 居中对齐显示
+                                              show='*',  # 显示加密
+                                              textvariable=StringVar(),  # 文本框的值,是一个StringVar()对象,这样与StringVar 就能更新
+                                              # 跟踪变量的值的变化,以保证值的变更随时可以显示在界面上
+                                              validate="key",
+                                              # 发生任何变动的时候,就会调用validate-command 这个调动受后面'Key'影响,类似键盘监听 如果换成"focusout"就是光标
+                                              validatecommand=(payment_password, '%P'))
         # %P代表输入框的实时内容 # %P表示当输入框的值允许改变,该值有效。
         # 该值为当前文本框内容 # %v(小写大写不一样的),当前validate的值  # %W表示该组件的名字)  # 文本输入框
         self.payment_password_entry.pack()  # 把text放在window上面,显示text这个控件
         # 确定按钮
-        self.button = Button(self, height=2, width=20, text="确定", bg='#FC5531', bd=8,
-                             command=self.get_parameters)
+        self.button = MyButton(self, height=2, width=20, text="确定", bg='#FC5531', bd=8,
+                               command=self.get_parameters)
         self.button.pack()  # 显示按钮
 
     # 获取参数
@@ -307,17 +331,14 @@ class QR_code(Frame, SpikeSystem_window):
         if self.url_path is None:
             messagebox.showinfo(title='提示', message='请选择网站')
             return
-        elif self.product_selection is None:
+        elif self.shoppingcart_selection is None:
             messagebox.showinfo(title='提示', message='请选择是否全选购物车')
-            return
-        elif not buy_time:
-            messagebox.showinfo(title='提示', message='请输入秒杀时间')
             return
         elif acquisition_time_format.match(buy_time) is None:
             messagebox.showwarning(title='警告', message='格式错误\n请检查并输入正确的抢购时间')
             return
         buy_time = acquisition_time.strptime(buy_time, '%Y-%m-%d %H:%M:%S')
-        SpikeSystem(self.url_path, self.product_selection, buy_time, payment_password, self.browser,
+        SpikeSystem(self.url_path, self.shoppingcart_selection, buy_time, payment_password, self.browser,
                     self.login_selection).start()  # 服务器对时
 
 
@@ -326,12 +347,12 @@ class Account_login(Frame, SpikeSystem_window):
         Frame.__init__(self, window)
         self.browser = 'edge'  # 浏览器选择
         self.login_selection = 'account'  # 登录选择
-        self.product_selection = 'check_all'  # 购物车选择
         self.url_path = None  # 网址
         self.buy_time = None  # 秒杀时间
         self.account_password = None  # 支付密码
+        self.shoppingcart_selection = None  # 购物车选择
         self.window = window  # 建立窗口window
-        self.window.title('秒杀系统4.1(作者:Kearns201)')  # 窗口名称
+        self.window.title('秒杀系统5.1(作者:Kearns201)')  # 窗口名称
         width = 620
         height = 430
         # 获取屏幕大小并计算起始坐标
@@ -380,7 +401,7 @@ class Account_login(Frame, SpikeSystem_window):
         self.url_phone.add_command(label='华为', font=font.Font(size=10),
                                    command=lambda: self.url('https://id1.cloud.huawei.com/CAS/portal/loginAuth.html'))
         # 购物车选择
-        self.buy_car.add_command(label='自动全选(默认)', font=font.Font(size=10),
+        self.buy_car.add_command(label='自动全选', font=font.Font(size=10),
                                  command=lambda: self.primary('check_all'))
         self.buy_car.add_separator()  # 分割线
         self.buy_car.add_command(label='手动单选', font=font.Font(size=10), command=lambda: self.primary('manual'))
@@ -405,10 +426,10 @@ class Account_login(Frame, SpikeSystem_window):
         self.label_buy_time['text'] = '请输入秒杀/抢购时间(格式:2000-01-01 20:00:00)'
         self.label_buy_time.pack()
         self.text_time = tkinter.StringVar(value=self.cause_time())
-        self.buy_time_entry = Entry(self, width=100, bd=5, justify=CENTER,
-                                    textvariable=self.text_time  # 文本框的值,是一个StringVar()对象,这样与StringVar就能更新
-                                    # 跟踪变量的值的变化,以保证值的变更随时可以显示在界面上
-                                    )  # 文本输入框
+        self.buy_time_entry = MyEntry(self, width=100, bd=5, justify=CENTER,
+                                      textvariable=self.text_time  # 文本框的值,是一个StringVar()对象,这样与StringVar就能更新
+                                      # 跟踪变量的值的变化,以保证值的变更随时可以显示在界面上
+                                      )  # 文本输入框
         self.buy_time_entry.pack()  # 把text放在window上面,显示text这个控件
         self.label_payment_password = Label(self, width=100, height=2, bg='#935167', bd=5, relief=RIDGE,
                                             font=font.Font(size=12))
@@ -416,33 +437,33 @@ class Account_login(Frame, SpikeSystem_window):
         self.label_payment_password.pack()
         # 端口input
         payment_password = self.window.register(self.limit_password)  # 需要将函数包装一下,必要的, 否则会直接调用
-        self.payment_password_entry = Entry(self,  # 置入容器
-                                            width=100, bd=5,
-                                            justify=CENTER,  # 居中对齐显示
-                                            show='*',  # 显示加密
-                                            textvariable=StringVar(),  # 文本框的值,是一个StringVar()对象,这样与StringVar 就能更新
-                                            # 跟踪变量的值的变化,以保证值的变更随时可以显示在界面上
-                                            validate="key",
-                                            # 发生任何变动的时候,就会调用validate-command 这个调动受后面'Key'影响,类似键盘监听 如果换成"focusout"就是光标
-                                            validatecommand=(
-                                                payment_password, '%P'))  # %P代表输入框的实时内容 # %P表示 当输入框的值允许改变,该值有效。
+        self.payment_password_entry = MyEntry(self,  # 置入容器
+                                              width=100, bd=5,
+                                              justify=CENTER,  # 居中对齐显示
+                                              show='*',  # 显示加密
+                                              textvariable=StringVar(),  # 文本框的值,是一个StringVar()对象,这样与StringVar 就能更新
+                                              # 跟踪变量的值的变化,以保证值的变更随时可以显示在界面上
+                                              validate="key",
+                                              # 发生任何变动的时候,就会调用validate-command 这个调动受后面'Key'影响,类似键盘监听 如果换成"focusout"就是光标
+                                              validatecommand=(
+                                                  payment_password, '%P'))  # %P代表输入框的实时内容 # %P表示 当输入框的值允许改变,该值有效。
         # 该值为当前文本框内容 # %v(小写大写不一样的),当前validate的值  # %W表示该组件的名字)  # 文本输入框
         self.payment_password_entry.pack()  # 把text放在window上面,显示text这个控件
         self.label_account = Label(self, width=100, height=2, bg='#935167', bd=5, relief=RIDGE,
                                    font=font.Font(size=12))
         self.label_account['text'] = '请输入账号(仅做自动填充,手动输入请留空)'
         self.label_account.pack()
-        self.account_entry = Entry(self, width=100, bd=5, justify=CENTER)  # 文本输入框
+        self.account_entry = MyEntry(self, width=100, bd=5, justify=CENTER)  # 文本输入框
         self.account_entry.pack()  # 把text放在window上面,显示text这个控件
         self.label_account_password = Label(self, width=100, height=2, bg='#935167', bd=5, relief=RIDGE,
                                             font=font.Font(size=12))
         self.label_account_password['text'] = '请输入密码(仅做自动填充,手动输入请留空)'
         self.label_account_password.pack()
-        self.account_password_entry = Entry(self, width=100, bd=5, justify=CENTER, show='*')  # 文本输入框
+        self.account_password_entry = MyEntry(self, width=100, bd=5, justify=CENTER, show='*')  # 文本输入框
         self.account_password_entry.pack()  # 把text放在window上面,显示text这个控件
         # 确定按钮
-        self.button = Button(self, height=2, width=20, text="确定", bg='#FC5531', bd=8,
-                             command=self.get_parameters)
+        self.button = MyButton(self, height=2, width=20, text="确定", bg='#FC5531', bd=8,
+                               command=self.get_parameters)
         self.button.pack()  # 显示按钮
 
     # 获取参数
@@ -456,22 +477,19 @@ class Account_login(Frame, SpikeSystem_window):
         if self.url_path is None:
             messagebox.showinfo(title='提示', message='请选择网站')
             return
-        elif self.product_selection is None:
+        elif self.shoppingcart_selection is None:
             messagebox.showinfo(title='提示', message='请选择是否全选购物车')
-            return
-        elif not buy_time:
-            messagebox.showinfo(title='提示', message='请输入秒杀时间')
             return
         elif acquisition_time_format.match(buy_time) is None:
             messagebox.showwarning(title='警告', message='格式错误\n请检查并输入正确的抢购时间')
             return
         buy_time = acquisition_time.strptime(buy_time, '%Y-%m-%d %H:%M:%S')
-        SpikeSystem(self.url_path, self.product_selection, buy_time, payment_password, self.browser,
+        SpikeSystem(self.url_path, self.shoppingcart_selection, buy_time, payment_password, self.browser,
                     self.login_selection, account, account_password).start()  # 服务器对时
 
 
 class SpikeSystem:
-    def __init__(self, url_path, product_selection, buy_time, password, browser, login_selection, account=None,
+    def __init__(self, url_path, shoppingcart_selection, buy_time, password, browser, login_selection, account=None,
                  account_password=None):
         self.thread = None  # 多线程
         self.driver = None  # 浏览器驱动
@@ -481,7 +499,7 @@ class SpikeSystem:
         self.account = account  # 账户名
         self.account_password = account_password  # 账户密码
         self.url_path = url_path  # 网站链接
-        self.product_selection = product_selection  # 选择的商品
+        self.shoppingcart_selection = shoppingcart_selection  # 选择的商品
         self.buy_time = buy_time  # 购买时间
         self.password = password  # 支付密码
         self.time_remaining = datetime.timedelta(seconds=4)  # 剩余时间
@@ -539,8 +557,7 @@ class SpikeSystem:
 
     # 浏览器驱动函数
     def drivers(self):
-        self.driver = self.online_driver()
-        self.driver.implicitly_wait(8)  # 隐式等待
+        self.driver = self.online_driver()  # 在线驱动
         return self.driver  # 返回浏览器驱动程序
 
     # 调用在线驱动
@@ -577,7 +594,6 @@ class SpikeSystem:
         :param detection: 用以检测是否离开当前页面
         :param qr_login: 默认为空,表示不需要点击扫码登录,否则传入扫码登录的元素
         :param detection_choice: 默认为真，表示detection在当前页面，假表示在下一页面
-        :return: 布尔值
         """
         self.driver.get(self.url_path)
         if qr_login is None:
@@ -585,14 +601,7 @@ class SpikeSystem:
         else:
             WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, qr_login))).click()
         if detection_choice:
-            while True:
-                try:
-                    self.driver.find_element(By.XPATH, detection).is_displayed()
-                    sleep(1)
-                except NoSuchElementException:
-                    self.driver.get(url)
-                    break
-            # WebDriverWait(self.driver, 100).until_not(ec.visibility_of_element_located((By.XPATH, detection)))
+            WebDriverWait(self.driver, 100).until_not(ec.visibility_of_element_located((By.XPATH, detection)))
         else:
             WebDriverWait(self.driver, 100).until(ec.presence_of_element_located((By.XPATH, detection)))
             self.driver.get(url)
@@ -608,7 +617,6 @@ class SpikeSystem:
         :param login_chick: 登录按钮
         :param account_login: 默认为空,表示不需要点击账号登录,否则传入账号登录的元素
         :param detection_choice: 默认为真，表示detection在当前页面，假表示在下一页面
-        :return: 布尔值
         """
         self.driver.get(self.url_path)
         if account is None:
@@ -637,7 +645,6 @@ class SpikeSystem:
         :param check_box: 传入全选框的Xpath
         :param check_login: 默认值为空, 传入购物车页面需要二次点击登录的元素
         :param agree: 默认值为空, 传入购物车页面需要点击同意的元素
-        :return: 布尔值
         """
         if check_login is None:
             pass
@@ -649,7 +656,7 @@ class SpikeSystem:
                 pass
             else:
                 WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, agree))).click()
-        if self.product_selection == 'check_all':
+        if self.shoppingcart_selection == 'check_all':
             # 全选购物车
             WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, check_box)))  # 等待全选框加载完毕
             if self.driver.find_element(By.XPATH, check_box).is_selected():
@@ -665,7 +672,6 @@ class SpikeSystem:
         :param settlement: 传入购物车页面的结算按钮Xpath
         :param submit: 传入地址确认页面的提交按钮Xpath
         :param address: 默认值为空, 传入地址确认页面的地址选择Xpath
-        :return: 布尔值
         """
         # 循环对比时间
         while True:
@@ -693,7 +699,6 @@ class SpikeSystem:
         :param input_box: 传入密码输入框Xpath
         :param enter: 默认为空,传入确认付款按钮Xpath
         :param click_to_pay: 默认为空,传入点击去付款调出输入框按钮Xpath
-        :return: 布尔值
         """
         if click_to_pay is None:
             pass
@@ -802,8 +807,8 @@ class SpikeSystem:
                    '/html/body/div/div[2]/div/div/div/div/div[1]/a[1]',
                    '//*[@id="stat_e3c9df7196008778"]/div[2]/div[2]/div/div/div/div[3]/button[1]')
         self.seckill('//*[@id="app"]/div[2]/div/div/div/div[1]/div[4]/span/a',
-                     '//*[@id="app"]/div[2]/div/div/div[2]/div/div[6]/div[2]/div/a[1]'
-                     , '//*[@id="app"]/div[2]/div/div/div[2]/div/div[2]/div[2]/div[1]')
+                     '//*[@id="app"]/div[2]/div/div/div[2]/div/div[6]/div[2]/div/a[1]',
+                     '//*[@id="app"]/div[2]/div/div/div[2]/div/div[2]/div[2]/div[1]')
         self.pay(click_to_pay='//*[@id="app"]/div[2]/div/div/div[2]/div[1]/div[2]/div[2]/ul/li[1]/img')
 
     # 华为函数
