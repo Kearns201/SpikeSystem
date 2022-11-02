@@ -588,27 +588,22 @@ class SpikeSystem:
         return self.driver
 
     # 扫码登录函数
-    def qr_login(self, url, detection, qr_login=None, detection_choice=True):
+    def qr_login(self, url, detection, qr_login=None):
         """
         :param url: 要跳转的购物车链接地址
         :param detection: 用以检测是否离开当前页面
         :param qr_login: 默认为空,表示不需要点击扫码登录,否则传入扫码登录的元素
-        :param detection_choice: 默认为真，表示detection在当前页面，假表示在下一页面
         """
         self.driver.get(self.url_path)
         if qr_login is None:
             pass
         else:
             WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, qr_login))).click()
-        if detection_choice:
-            WebDriverWait(self.driver, 100).until_not(ec.visibility_of_element_located((By.XPATH, detection)))
-        else:
-            WebDriverWait(self.driver, 100).until(ec.presence_of_element_located((By.XPATH, detection)))
-            self.driver.get(url)
+        WebDriverWait(self.driver, 120).until(ec.presence_of_element_located((By.XPATH, detection)))
+        self.driver.get(url)
 
     # 账号登录函数
-    def account_login(self, url, detection, account=None, account_password=None, login_chick=None, account_login=None,
-                      detection_choice=True):
+    def account_login(self, url, detection, account=None, account_password=None, login_chick=None, account_login=None):
         """
         :param url: 要跳转的购物车链接地址
         :param detection: 用以检测是否离开当前页面
@@ -616,28 +611,23 @@ class SpikeSystem:
         :param account_password: 密码输入框
         :param login_chick: 登录按钮
         :param account_login: 默认为空,表示不需要点击账号登录,否则传入账号登录的元素
-        :param detection_choice: 默认为真，表示detection在当前页面，假表示在下一页面
         """
         self.driver.get(self.url_path)
-        if account is None:
+        if account_login is None:
             pass
         else:
             WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, account_login))).click()
-            if account_login is None:
-                pass
-            else:
-                WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, account))).send_keys(
-                    self.account)
-                WebDriverWait(self.driver, 10).until(
-                    ec.presence_of_element_located((By.XPATH, account_password))).send_keys(
-                    self.account_password)
-                WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, login_chick))).click()
-        if detection_choice:
-            WebDriverWait(self.driver, 100).until_not(ec.visibility_of_element_located((By.XPATH, detection)))
-            self.driver.get(url)
+        if account is None:
+            pass
         else:
-            WebDriverWait(self.driver, 100).until(ec.presence_of_element_located((By.XPATH, detection)))
-            self.driver.get(url)
+            WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, account))).send_keys(
+                self.account)
+            WebDriverWait(self.driver, 10).until(
+                ec.presence_of_element_located((By.XPATH, account_password))).send_keys(
+                self.account_password)
+            WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, login_chick))).click()
+        WebDriverWait(self.driver, 120).until(ec.presence_of_element_located((By.XPATH, detection)))
+        self.driver.get(url)
 
     # 全选函数
     def check(self, check_box, check_login=None, agree=None):
@@ -726,10 +716,12 @@ class SpikeSystem:
     # 淘宝函数
     def taobao(self):
         if self.login_selection == 'qr_code':
-            self.qr_login('https://cart.taobao.com/cart.htm', '//*[@id="header"]/div/div/a[2]',
+            self.qr_login('https://cart.taobao.com/cart.htm',
+                          '//*[@id="J_Col_Main"]/div/div[1]/div/div[1]/div[2]/ul/li[5]/a/span',
                           '//*[@id="login"]/div[1]/i')
         else:
-            self.account_login('https://cart.taobao.com/cart.htm', '//*[@id="header"]/div/div/a[2]',
+            self.account_login('https://cart.taobao.com/cart.htm',
+                               '//*[@id="J_Col_Main"]/div/div[1]/div/div[1]/div[2]/ul/li[5]/a/span',
                                '//*[@id="fm-login-id"]', '//*[@id="fm-login-password"]',
                                '//*[@id="login-form"]/div[4]/button')
         self.check('//*[@id="J_SelectAll1"]/div/label')
@@ -739,9 +731,9 @@ class SpikeSystem:
     # 京东函数
     def jd(self):
         if self.login_selection == 'qr_code':
-            self.qr_login('https://cart.jd.com/cart_index', '/html/body/div[1]/a')
+            self.qr_login('https://cart.jd.com/cart_index', '//*[@id="J_user"]/div/div[1]/div[2]/p[2]/a[2]')
         else:
-            self.account_login('https://cart.jd.com/cart_index', '/html/body/div[1]/a',
+            self.account_login('https://cart.jd.com/cart_index', '//*[@id="J_user"]/div/div[1]/div[2]/p[2]/a[2]',
                                '//*[@id="loginname"]', '//*[@id="nloginpwd"]',
                                '//*[@id="loginsubmit"]', '//*[@id="content"]/div[2]/div[1]/div/div[3]/a')
         self.check('//*[@id="cart-body"]/div[2]/div[3]/div[1]/div/input')
@@ -753,9 +745,11 @@ class SpikeSystem:
     # 苏宁函数
     def suning(self):
         if self.login_selection == 'qr_code':
-            self.qr_login('https://shopping.suning.com/cart.do#resize:380,450', '//*[@id="LOGIN_ADVISE"]')
+            self.qr_login('https://shopping.suning.com/cart.do#resize:380,450',
+                          '/html/body/div[8]/div[3]/div[1]/div[3]/div[2]/div[5]/a')
         else:
-            self.account_login('https://shopping.suning.com/cart.do#resize:380,450', '//*[@id="LOGIN_ADVISE"]',
+            self.account_login('https://shopping.suning.com/cart.do#resize:380,450',
+                               '/html/body/div[8]/div[3]/div[1]/div[3]/div[2]/div[5]/a',
                                '//*[@id="userName"]', '//*[@id="password"]',
                                '//*[@id="submit"]', '/html/body/div[2]/div[1]/div/div[1]/a[2]')
         self.check('//*[@id="chooseAllCheckFrame2"]')
@@ -764,10 +758,10 @@ class SpikeSystem:
     # vivo函数
     def vivo(self):
         if self.login_selection == 'qr_code':
-            self.qr_login('https://shop.vivo.com.cn/shoppingcart', '/html/body/div[1]/div[3]/div[1]/div/div[1]/a',
+            self.qr_login('https://shop.vivo.com.cn/shoppingcart', '/html/body/div[1]/div[3]/div[1]/div[3]/div[1]',
                           '/html/body/div[1]/div[3]/div[1]/div/div[2]/div[1]/img[2]')
         else:
-            self.account_login('https://shop.vivo.com.cn/shoppingcart', '/html/body/div[1]/div[3]/div[1]/div/div[1]/a',
+            self.account_login('https://shop.vivo.com.cn/shoppingcart', '/html/body/div[1]/div[3]/div[1]/div[3]/div[1]',
                                '/html/body/div[1]/div[3]/div[1]/div/div[2]/div[3]/div[2]/div[2]/div[1]/div[1]/input',
                                '/html/body/div[1]/div[3]/div[1]/div/div[2]/div[3]/div[2]/div[2]/div[1]/div[3]/input',
                                '/html/body/div[1]/div[3]/div[1]/div/div[2]/div[3]/div[6]',
@@ -779,13 +773,11 @@ class SpikeSystem:
     def oppo(self):
         if self.login_selection == 'qr_code':
             self.qr_login('https://www.opposhop.cn/cn/web/cart', '//*[@id="root"]/div/div[1]/div/div[2]/div[3]',
-                          '//*[@id="root"]/div/div[3]/div/div[2]/div/div[1]/div[2]', False)
+                          '//*[@id="root"]/div/div[3]/div/div[2]/div/div[1]/div[2]')
         else:
             self.account_login('https://www.opposhop.cn/cn/web/cart', '//*[@id="root"]/div/div[1]/div/div[2]/div[3]',
-                               '//*[@id="root"]/div/div[3]/div/div[2]/div/div[2]/div[1]/div[2]/div[2]/div/div['
-                               '1]/div/div/div/div[2]/input',
-                               '//*[@id="root"]/div/div[3]/div/div[2]/div/div[2]/div[1]/div[2]/div[2]/div/div['
-                               '2]/div/div/div[1]/input',
+                               '//*[@id="root"]/div/div[3]/div/div[2]/div/div[2]/div[1]/div[2]/div[2]/div/div[1]/div/div/div/div/input',
+                               '//*[@id="root"]/div/div[3]/div/div[2]/div/div[2]/div[1]/div[2]/div[2]/div/div[2]/div/div/div[1]/input',
                                '//*[@id="root"]/div/div[3]/div/div[2]/div/div[2]/div[1]/div[2]/div[2]/div/div[4]',
                                '//*[@id="root"]/div/div[3]/div/div[2]/div/div[2]/div[1]/div[1]/div[2]/span')
         self.check('//*[@id="input-36"]')
@@ -796,7 +788,7 @@ class SpikeSystem:
     def xiaomi(self):
         if self.login_selection == 'qr_code':
             self.qr_login('https://www.mi.com/shop/buy/cart', '//*[@id="root"]/div/div/div[1]/div[2]/span/span',
-                          '//*[@id="root"]/div/div/div[2]/div/div/div[2]/div/div[1]/div[1]', False)
+                          '//*[@id="root"]/div/div/div[2]/div/div/div[2]/div/div[1]/div[1]')
         else:
             self.account_login('https://www.mi.com/shop/buy/cart', '//*[@id="root"]/div/div/div[1]/div[2]/span/span',
                                '//*[@id="rc-tabs-0-panel-login"]/form/div[1]/div[1]/div[2]/div/div/div/div/input',
@@ -814,10 +806,10 @@ class SpikeSystem:
     # 华为函数
     def huawei(self):
         if self.login_selection == 'qr_code':
-            self.qr_login('https://www.vmall.com/cart', '/html/body/div/div/div[1]/div[3]/div[2]/span/span')
+            self.qr_login('https://www.vmall.com/cart', '//*[@id="logoutUrl"]/span/span')
         else:
-            self.account_login('https://www.vmall.com/cart', '/html/body/div/div/div[1]/div[3]/div[2]/span/span',
-                               '/html/body/div[1]/div/div[1]/div[3]/div[3]/span[3]/div[1]/form/div[2]/div/div/div/input',
+            self.account_login('https://www.vmall.com/cart', '//*[@id="logoutUrl"]/span/span',
+                               '/html/body/div/div/div[1]/div[3]/div[3]/span[3]/div[1]/form/div[2]/div/div/div/input',
                                '/html/body/div[1]/div/div[1]/div[3]/div[3]/span[3]/div[1]/form/div[3]/div/div/div/input',
                                '/html/body/div[1]/div/div[1]/div[3]/div[3]/span[3]/div[1]/div[2]/div/div/div')
         self.check('//*[@id="app"]/div[2]/div[3]/div[4]/div/div[1]/label/input',
