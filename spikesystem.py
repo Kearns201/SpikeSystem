@@ -24,7 +24,7 @@ from selenium.webdriver.edge.options import Options as edgeOptions
 from selenium.webdriver.edge.service import Service as edgeService
 from selenium.webdriver.firefox.options import Options as firefoxOptions
 from selenium.webdriver.firefox.service import Service as firefoxService
-from selenium.webdriver.support import expected_conditions as ec
+from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
@@ -89,7 +89,8 @@ class SpikeSystem_window(Tk):
 
     # 对时国家授时中心
     def ntp_timing_china(self, mode='manual'):
-        self.verify_ntp_time('ntp.ntsc.ac.cn', mode)
+        # self.verify_ntp_time('ntp.ntsc.ac.cn', mode)
+        self.verify_ntp_time('ntp.aliyun.com', mode)
 
     # 对时阿里云NTP服务器
     def ntp_timing_aliyun(self, mode='manual'):
@@ -220,7 +221,7 @@ class QR_code(Frame, SpikeSystem_window):
         self.password = None  # 支付密码
         self.shoppingcart_selection = None  # 购物车选择
         self.window = window  # 建立窗口window
-        self.window.title('秒杀系统5.1(作者:Kearns201)')  # 窗口名称
+        self.window.title('秒杀系统5.2(作者:Kearns201)')  # 窗口名称
         width = 620
         height = 260
         # 获取屏幕大小并计算起始坐标
@@ -352,7 +353,7 @@ class Account_login(Frame, SpikeSystem_window):
         self.account_password = None  # 支付密码
         self.shoppingcart_selection = None  # 购物车选择
         self.window = window  # 建立窗口window
-        self.window.title('秒杀系统5.1(作者:Kearns201)')  # 窗口名称
+        self.window.title('秒杀系统5.2(作者:Kearns201)')  # 窗口名称
         width = 620
         height = 430
         # 获取屏幕大小并计算起始坐标
@@ -431,6 +432,18 @@ class Account_login(Frame, SpikeSystem_window):
                                       # 跟踪变量的值的变化,以保证值的变更随时可以显示在界面上
                                       )  # 文本输入框
         self.buy_time_entry.pack()  # 把text放在window上面,显示text这个控件
+        self.label_account = Label(self, width=100, height=2, bg='#935167', bd=5, relief=RIDGE,
+                                   font=font.Font(size=12))
+        self.label_account['text'] = '请输入账号(仅做自动填充,手动输入请留空)'
+        self.label_account.pack()
+        self.account_entry = MyEntry(self, width=100, bd=5, justify=CENTER)  # 文本输入框
+        self.account_entry.pack()  # 把text放在window上面,显示text这个控件
+        self.label_account_password = Label(self, width=100, height=2, bg='#935167', bd=5, relief=RIDGE,
+                                            font=font.Font(size=12))
+        self.label_account_password['text'] = '请输入密码(仅做自动填充,手动输入请留空)'
+        self.label_account_password.pack()
+        self.account_password_entry = MyEntry(self, width=100, bd=5, justify=CENTER, show='*')  # 文本输入框
+        self.account_password_entry.pack()  # 把text放在window上面,显示text这个控件
         self.label_payment_password = Label(self, width=100, height=2, bg='#935167', bd=5, relief=RIDGE,
                                             font=font.Font(size=12))
         self.label_payment_password['text'] = '请输入支付密码(仅做自动填充,手动输入请留空)'
@@ -449,18 +462,6 @@ class Account_login(Frame, SpikeSystem_window):
                                                   payment_password, '%P'))  # %P代表输入框的实时内容 # %P表示 当输入框的值允许改变,该值有效。
         # 该值为当前文本框内容 # %v(小写大写不一样的),当前validate的值  # %W表示该组件的名字)  # 文本输入框
         self.payment_password_entry.pack()  # 把text放在window上面,显示text这个控件
-        self.label_account = Label(self, width=100, height=2, bg='#935167', bd=5, relief=RIDGE,
-                                   font=font.Font(size=12))
-        self.label_account['text'] = '请输入账号(仅做自动填充,手动输入请留空)'
-        self.label_account.pack()
-        self.account_entry = MyEntry(self, width=100, bd=5, justify=CENTER)  # 文本输入框
-        self.account_entry.pack()  # 把text放在window上面,显示text这个控件
-        self.label_account_password = Label(self, width=100, height=2, bg='#935167', bd=5, relief=RIDGE,
-                                            font=font.Font(size=12))
-        self.label_account_password['text'] = '请输入密码(仅做自动填充,手动输入请留空)'
-        self.label_account_password.pack()
-        self.account_password_entry = MyEntry(self, width=100, bd=5, justify=CENTER, show='*')  # 文本输入框
-        self.account_password_entry.pack()  # 把text放在window上面,显示text这个控件
         # 确定按钮
         self.button = MyButton(self, height=2, width=20, text="确定", bg='#FC5531', bd=8,
                                command=self.get_parameters)
@@ -471,9 +472,9 @@ class Account_login(Frame, SpikeSystem_window):
         acquisition_time_format = compile(
             '^[0-9]{4}-(((0[13578]|(10|12))-(0[1-9]|[1-2][0-9]|3[0-1]))|(02-(0[1-9]|[1-2][0-9]))|((0[469]|11)-(0[1-9]|[1-2][0-9]|30)))\s(([1-9])|([0-1][0-9])|([1-2][0-3])):([0-5][0-9]):([0-5][0-9])$')
         buy_time = self.buy_time_entry.get()
-        payment_password = self.payment_password_entry.get()
         account = self.account_entry.get()
         account_password = self.account_password_entry.get()
+        payment_password = self.payment_password_entry.get()
         if self.url_path is None:
             messagebox.showinfo(title='提示', message='请选择网站')
             return
@@ -527,13 +528,11 @@ class SpikeSystem:
 
     # 秒杀主程序
     def main(self):
-        self.driver = self.drivers()  # 指定浏览器驱动
         try:
+            self.driver = self.drivers()  # 指定浏览器驱动
             if self.driver is None:
                 return False
             else:
-                # 全屏化页面
-                self.driver.maximize_window()
                 if self.url_path == 'https://login.taobao.com/':
                     self.taobao()  # 淘宝
                 if self.url_path == 'https://passport.jd.com/new/login.aspx':
@@ -548,12 +547,13 @@ class SpikeSystem:
                     self.xiaomi()  # 小米
                 if self.url_path == 'https://id1.cloud.huawei.com/CAS/portal/loginAuth.html':
                     self.huawei()  # 华为
+                Spike.destroy()
         except InvalidSessionIdException:
             return False
         except WebDriverException:  # 驱动未调用成功
             return False
-        except Exception:
-            return False
+        # except Exception:  # 其他异常
+        #     return False
 
     # 浏览器驱动函数
     def drivers(self):
@@ -575,10 +575,21 @@ class SpikeSystem:
             elif self.browser == 'firefox':
                 online_driver = GeckoDriverManager().install()
                 self.options = firefoxOptions()
-            self.options.add_argument("--disable-blink-features")
-            self.options.add_argument("--disable-blink-features=AutomationControlled")
+            self.options.add_argument("--disable-blink-features=AutomationControlled")  # 禁止自动化控制
+            self.options.add_argument("--disable-blink-features")  # 禁止浏览器检测
+            self.options.add_experimental_option('excludeSwitches', ['enable-automation'])  # 隐藏selenium
+            self.options.add_experimental_option('useAutomationExtension', False)  # 禁止浏览器检测
+            self.options.add_argument('--disable-extensions')  # 禁用扩展
+            self.options.add_argument('--start-maximized')  # 最大化窗口
             service = browser_service[self.browser](online_driver)  # service容器
             self.driver = browser[self.browser](service=service, options=self.options)  # 启动浏览器驱动
+            self.driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {  # 驱动伪装
+                "source": """
+                    Object.defineProperty(navigator, 'webdriver', {
+                    get: () => undefined
+                    })
+                """
+            })
         except WebDriverException:
             messagebox.showerror(title='错误:启动失败', message='请确认是否安装了相应的浏览器')
         except requests.exceptions.SSLError:
@@ -594,12 +605,12 @@ class SpikeSystem:
         :param detection: 用以检测是否离开当前页面
         :param qr_login: 默认为空,表示不需要点击扫码登录,否则传入扫码登录的元素
         """
-        self.driver.get(self.url_path)
+        self.driver.get(self.url_path)  # 打开登录页面
         if qr_login is None:
             pass
         else:
-            WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, qr_login))).click()
-        WebDriverWait(self.driver, 120).until(ec.presence_of_element_located((By.XPATH, detection)))
+            WebDriverWait(self.driver, 100).until(EC.presence_of_element_located((By.XPATH, qr_login))).click()
+        WebDriverWait(self.driver, 120).until(EC.presence_of_element_located((By.XPATH, detection)))  # 等待扫码登录
         self.driver.get(url)
 
     # 账号登录函数
@@ -616,17 +627,17 @@ class SpikeSystem:
         if account_login is None:
             pass
         else:
-            WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, account_login))).click()
+            WebDriverWait(self.driver, 100).until(EC.presence_of_element_located((By.XPATH, account_login))).click()
         if account is None:
             pass
         else:
-            WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, account))).send_keys(
+            WebDriverWait(self.driver, 100).until(EC.presence_of_element_located((By.XPATH, account))).send_keys(
                 self.account)
-            WebDriverWait(self.driver, 10).until(
-                ec.presence_of_element_located((By.XPATH, account_password))).send_keys(
+            WebDriverWait(self.driver, 100).until(
+                EC.presence_of_element_located((By.XPATH, account_password))).send_keys(
                 self.account_password)
-            WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, login_chick))).click()
-        WebDriverWait(self.driver, 120).until(ec.presence_of_element_located((By.XPATH, detection)))
+            WebDriverWait(self.driver, 100).until(EC.presence_of_element_located((By.XPATH, login_chick))).click()
+        WebDriverWait(self.driver, 120).until(EC.presence_of_element_located((By.XPATH, detection)))
         self.driver.get(url)
 
     # 全选函数
@@ -640,15 +651,15 @@ class SpikeSystem:
             pass
         else:
             # 二次点击登录
-            WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, check_login))).click()
+            WebDriverWait(self.driver, 100).until(EC.presence_of_element_located((By.XPATH, check_login))).click()
             # 同意协议
             if agree is None:
                 pass
             else:
-                WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, agree))).click()
+                WebDriverWait(self.driver, 100).until(EC.presence_of_element_located((By.XPATH, agree))).click()
         if self.shoppingcart_selection == 'check_all':
             # 全选购物车
-            WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, check_box)))  # 等待全选框加载完毕
+            WebDriverWait(self.driver, 120).until(EC.presence_of_element_located((By.XPATH, check_box)))  # 等待全选框加载完毕
             if self.driver.find_element(By.XPATH, check_box).is_selected():
                 pass
             else:
@@ -675,58 +686,65 @@ class SpikeSystem:
                 if address is None:
                     pass
                 else:
-                    WebDriverWait(self.driver, 5, 0.001).until(
-                        ec.presence_of_element_located((By.XPATH, address))).click()
+                    WebDriverWait(self.driver, 10, 0.001).until(
+                        EC.presence_of_element_located((By.XPATH, address))).click()
                 # 点击提交按钮
-                WebDriverWait(self.driver, 5, 0.001).until(ec.presence_of_element_located((By.XPATH, submit))).click()
+                WebDriverWait(self.driver, 10, 0.001).until(EC.presence_of_element_located((By.XPATH, submit))).click()
                 break
             if (self.buy_time - now_time) > self.time_remaining:
                 sleep(3)
 
     # 付款函数
-    def pay(self, input_box=None, enter=None, click_to_pay=None):
+    def pay(self, input_box=None, enter=None, click_to_pay=None, switch_frame=None):
         """
         :param input_box: 传入密码输入框Xpath
         :param enter: 默认为空,传入确认付款按钮Xpath
         :param click_to_pay: 默认为空,传入点击去付款调出输入框按钮Xpath
+        :param switch_frame: 默认为空,切换frame框架
         """
         if click_to_pay is None:
             pass
         else:
             # 点击支付按钮
-            WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, click_to_pay))).click()
-            if input_box is None:
+            WebDriverWait(self.driver, 60).until(EC.presence_of_element_located((By.XPATH, click_to_pay))).click()
+        if input_box is None:
+            pass
+        else:
+            if self.password is None or len(self.password) != 6:
                 pass
             else:
-                if self.password is not None and self.password.isspace() is False and self.password.isnumeric() and len(
-                        self.password) == 6:
-                    # 判断是否有输入框
-                    WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, input_box)))
-                    for i in range(len(self.password)):
-                        pyautogui.press(self.password[i])
-                    if enter is None:
-                        pyautogui.press('enter')
-                    else:
-                        WebDriverWait(self.driver, 10).until(ec.presence_of_element_located((By.XPATH, enter))).click()
-                    sleep(10)
-                    self.driver.quit()  # 退出浏览器函数
-                else:
+                if switch_frame is None:
                     pass
+                else:
+                    # 切换frame框架
+                    WebDriverWait(self.driver, 60).until(EC.presence_of_element_located((By.XPATH, switch_frame)))
+                    self.driver.switch_to.frame(self.driver.find_element(By.XPATH, switch_frame))
+                # 等待输入框加入BOM树
+                WebDriverWait(self.driver, 60).until(EC.presence_of_element_located((By.XPATH, input_box))).click()
+                for i in self.password:
+                    pyautogui.typewrite(i)
+                if enter is None:
+                    pyautogui.press('enter')
+                else:
+                    WebDriverWait(self.driver, 60).until(EC.presence_of_element_located((By.XPATH, enter))).click()
+                sleep(10)
+                self.driver.quit()  # 退出浏览器函数
 
     # 淘宝函数
     def taobao(self):
         if self.login_selection == 'qr_code':
             self.qr_login('https://cart.taobao.com/cart.htm',
-                          '//*[@id="J_Col_Main"]/div/div[1]/div/div[1]/div[2]/ul/li[5]/a/span',
+                          '//*[@id="J_MyAlipayInfo"]/span/a',
                           '//*[@id="login"]/div[1]/i')
         else:
             self.account_login('https://cart.taobao.com/cart.htm',
-                               '//*[@id="J_Col_Main"]/div/div[1]/div/div[1]/div[2]/ul/li[5]/a/span',
+                               '//*[@id="J_MyAlipayInfo"]/span/a',
                                '//*[@id="fm-login-id"]', '//*[@id="fm-login-password"]',
                                '//*[@id="login-form"]/div[4]/button')
         self.check('//*[@id="J_SelectAll1"]/div/label')
         self.seckill('//*[@id="J_Go"]', '//*[@id="submitOrderPC_1"]/div[1]/a[2]')
-        self.pay('//*[@id="payPassword_container"]/div')
+        self.pay('//*[@id="payPassword_rsainput"]', '//*[@id="validateButton"]',
+                 switch_frame='//*[@id="channels"]/div/iframe')
 
     # 京东函数
     def jd(self):
